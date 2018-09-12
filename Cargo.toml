@@ -42,6 +42,9 @@ path = "plume-api"
 [dependencies.plume-common]
 path = "plume-common"
 
+[dependencies.plume-front]
+path = "plume-front"
+
 [dependencies.plume-models]
 path = "plume-models"
 
@@ -72,4 +75,4 @@ postgres = ["plume-models/postgres"]
 sqlite = ["plume-models/sqlite"]
 
 [workspace]
-members = ["plume-api", "plume-cli", "plume-models", "plume-common"]
+members = ["plume-api", "plume-cli", "plume-common", "plume-front", "plume-models"]
