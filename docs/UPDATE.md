@@ -9,6 +9,11 @@ cargo install --force && cargo install --path plume-cli --force
 # Run the migrations
 diesel migration run
 
+# Rebuild the front-end
+cd plume-front
+cargo web build
+cd ..
+
 # If you are using sysvinit
 sudo service plume restart
 

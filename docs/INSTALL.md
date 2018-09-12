@@ -9,7 +9,7 @@ In order to be installed and to work correctly, Plume needs:
 - *GCC* and *make*  (to compile C dependencies)
 - *PostgreSQL* or *SQlite 3 development files* (for the database)
 - *GetText* (to manage translations)
-- *Rust* and *Cargo* (to build the code)
+- *Rust*, *Cargo* and *Cargo Web* (to build the code)
 - *OpenSSL* and *OpenSSL librairies* (for security)
 
 All the following instructions will need a terminal.
@@ -126,8 +126,38 @@ Plume needs to be compiled from source. To download the code, run:
 git clone https://github.com/Plume-org/Plume.git
 cd Plume
 
+<<<<<<< HEAD
 # If you want PostgreSQL
 export FEATURES=postgres
+=======
+# This may take some time as RustUp will download all
+# the required Rust components, and Cargo will download
+# and compile all dependencies.
+cargo build
+```
+
+We may provide precompiled packages and Docker images in the future; if you have experience in these fields and want to help, feel free to discuss this in issues and to propose pull-requests!
+
+## Building the front-end
+
+Plume don't use JavaScript for front-end scripts, but Rust, which means that you will have to build them too. A special cargo subcommand is needed for that.
+
+```bash
+# Install the command to build the front-end
+cargo install cargo-web
+
+# Build it
+cd plume-front
+cargo web build
+cd ..
+```
+
+## Configuring PostgreSQL
+
+You can either run PostgreSQL from the machine that runs Plume, or from another server. We recommend you to use the first setup for development environments, or in production for small instances.
+
+In the first case, just run this command after the PostgreSQL installation, to start it:
+>>>>>>> 808e0df... Docs: how to build the front
 
 # If you want SQlite
 export FEATURES=sqlite
