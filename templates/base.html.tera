@@ -73,5 +73,6 @@
             {% endif %}
         </footer>
         <script src="/static/js/menu.js"></script>
+        <script src="/static/js/plume-front.js"></script>
     </body>
 </html>

@@ -111,7 +111,17 @@ pub mod tags;
 pub mod user;
 pub mod well_known;
 
-#[get("/static/<file..>", rank = 2)]
+#[get("/static/<file..>", rank = 3)]
 fn static_files(file: PathBuf) -> Option<NamedFile> {
     NamedFile::open(Path::new("static/").join(file)).ok()
+}
+
+#[get("/static/js/plume-front.js", rank = 2)]
+fn js_front() -> Option<NamedFile> {
+    NamedFile::open(Path::new("target/wasm32-unknown-unknown/release/plume-front.js")).ok()
+}
+
+#[get("/plume-front.wasm", rank = 2)]
+fn wasm_front() -> Option<NamedFile> {
+    NamedFile::open(Path::new("target/wasm32-unknown-unknown/release/plume-front.wasm")).ok()
 }
