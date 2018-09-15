@@ -943,3 +943,98 @@ figcaption {
 
     .flex.wrap { flex-direction: column; }
  }
+
+ /**
+ Editor
+ **/
+
+#editor, #editor > div {
+    height: 100vh;
+    background: white;
+}
+
+#editor > div {
+    display: flex;
+    flex-direction: column;
+}
+
+#editor main {
+    flex: 1;
+    padding: 100px 30rem;
+    background: white;
+}
+
+#editor header {
+    background: white;
+    opacity: 0.5;
+}
+
+#editor header:hover {
+    opacity: 1;
+}
+
+#editor h1 {
+    min-height: 1em;
+    font-family: "Playfair Display", serif;
+    background: white;
+    outline: none;
+}
+
+#editor .placeholder {
+    color: #DADADA;
+    display: none;
+}
+
+#editor .placeholder.show {
+    display: inline;
+}
+
+#editor main p {
+    background: white;
+    min-height: 1em;
+    outline: none;
+    font-family: "Lora", serif;
+    font-size: 1.4em;
+    margin-left: -32px;
+}
+
+#editor .status {
+    color: #23f0c7;
+}
+
+#editor header > * {
+    margin: 1em;
+}
+
+#editor main .actions {
+    visibility: hidden;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    flex: 0;
+    position: relative;
+    right: 72px;
+}
+
+#editor .actions.show {
+    visibility: visible;
+}
+
+#editor main .actions .action {
+    background: #E3E3E3;
+    border-radius: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 2em;
+    height: 2em;
+    cursor: pointer;
+}
+
+.block-wrapper {
+    display: flex;
+}
+
+.block-wrapper > * {
+    flex: 1;
+}

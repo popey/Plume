@@ -3,6 +3,7 @@ use rocket::{
     http::uri::{FromUriParam, UriDisplay},
     response::NamedFile
 };
+use rocket_contrib::Template;
 use std::{
     fmt,
     path::{Path, PathBuf}
@@ -124,4 +125,9 @@ fn js_front() -> Option<NamedFile> {
 #[get("/plume-front.wasm", rank = 2)]
 fn wasm_front() -> Option<NamedFile> {
     NamedFile::open(Path::new("target/wasm32-unknown-unknown/release/plume-front.wasm")).ok()
+}
+
+#[get("/editor")]
+fn editor() -> Template {
+    Template::render("posts/editor", json!({}))
 }
