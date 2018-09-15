@@ -6,6 +6,11 @@ authors = ["Baptiste Gelez <baptiste@gelez.xyz>"]
 [dependencies]
 stdweb = "0.4"
 
+[dependencies.rand]
+version = "0.5"
+features = ["stdweb"]
+
+# To make the code simpler, and yew's README useful
 [dependencies.yew]
 git = "https://github.com/DenisKolodin/yew"
 rev = "e6fc66e185c83bb9bb08a86750a57a3558bc9a18"
