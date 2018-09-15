@@ -41,6 +41,7 @@ pub enum Msg {
     Focus,
     Leave,
     HeaderUp,
+    Input(String),
 }
 
 #[derive(Clone, Default, PartialEq)]
@@ -49,6 +50,24 @@ pub struct Props {
     pub show_placeholder: bool,
     pub placeholder: Option<&'static str>,
     pub has_menu: bool,
+}
+
+impl Block {
+    fn set_text(&mut self, text: String) {
+        self.kind = match self.kind {
+            BlockKind::Header(level, _) => BlockKind::Header(level, text),
+            BlockKind::Paragraph(_) => BlockKind::Paragraph(text),
+            ref x => x.clone()
+        }
+    }
+
+    fn get_text(&self) -> String {
+        match self.kind {
+            BlockKind::Header(_, ref content) |
+            BlockKind::Paragraph(ref content) => content.clone(),
+            _ => String::new()
+        }
+    }
 }
 
 impl Component for Block {
@@ -70,17 +89,13 @@ impl Component for Block {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
-            Msg::Update => {
-                let elt = document().get_element_by_id(self.id.as_ref());
-                let new = elt.clone().and_then(|t| t.text_content())
-                    .unwrap_or(String::new())
-                    // Remove the placeholder from the content
-                    .splitn(2, self.placeholder).last().unwrap_or("").to_string();
-                self.kind = match self.kind {
-                    BlockKind::Header(level, _) => BlockKind::Header(level, new.clone().chars().rev().collect()),
-                    BlockKind::Paragraph(_) => BlockKind::Paragraph(new.clone().chars().rev().collect()),
-                    ref x => x.clone()
-                };
+            Msg::Input(ref key) => {
+                let content = self.get_text();
+                match key.as_ref() {
+                    "Backspace" => self.set_text(content[0..(content.len() - 1)].to_string()),
+                    _ => self.set_text(content +  key.as_str()),
+                }
+
             },
             Msg::ToggleMenu => self.menu_opened = !self.menu_opened,
             Msg::Leave => self.has_focus = false,
@@ -89,7 +104,8 @@ impl Component for Block {
                 BlockKind::Header(level, ref content) => BlockKind::Header(level - 1, content.clone()),
                 BlockKind::Paragraph(ref content) => BlockKind::Header(2, content.clone()),
                 _ => BlockKind::Header(2, String::new()),
-            }
+            },
+            _ => {}
         }
         ConsoleService::new().log(format!("{:?} => {:?}", msg, self).as_ref());
         true
@@ -116,15 +132,15 @@ impl<'a> Renderable<Block> for Block {
 
         let main = match self.kind {
             BlockKind::Paragraph(ref content) => html! {
-                <p id=self.id.as_str(), contenteditable=true, onkeyup=|_| Msg::Update, onblur=|_| Msg::Update,>{ content.clone() }</p>
+                <p id=self.id.as_str(), onkeyup=|e| Msg::Input(e.key()), onblur=|_| Msg::Update, tabindex="1",>{ content.clone() }</p>
             },
             BlockKind::Header(level, ref content) => match level {
-                1 => html! { <h1 id=self.id.as_str(), contenteditable=true, onkeyup=|_| Msg::Update, onblur=|_| Msg::Update,>{ placeholder }{ content.clone() }</h1>},
-                2 => html! { <h2 id=self.id.as_str(), contenteditable=true, onkeyup=|_| Msg::Update, onblur=|_| Msg::Update,>{ placeholder }{ content.clone() }</h2>},
-                3 => html! { <h3 id=self.id.as_str(), contenteditable=true, onkeyup=|_| Msg::Update, onblur=|_| Msg::Update,>{ placeholder }{ content.clone() }</h3>},
-                4 => html! { <h4 id=self.id.as_str(), contenteditable=true, onkeyup=|_| Msg::Update, onblur=|_| Msg::Update,>{ placeholder }{ content.clone() }</h4>},
-                5 => html! { <h5 id=self.id.as_str(), contenteditable=true, onkeyup=|_| Msg::Update, onblur=|_| Msg::Update,>{ placeholder }{ content.clone() }</h5>},
-                _ => html! { <h6 id=self.id.as_str(), contenteditable=true, onkeyup=|_| Msg::Update, onblur=|_| Msg::Update,>{ placeholder }{ content.clone() }</h6>},
+                1 => html! { <h1 id=self.id.as_str(), onkeyup=|e| Msg::Input(e.key()), onblur=|_| Msg::Update,>{ placeholder }{ content.clone() }</h1>},
+                2 => html! { <h2 id=self.id.as_str(), onkeyup=|e| Msg::Input(e.key()), onblur=|_| Msg::Update,>{ placeholder }{ content.clone() }</h2>},
+                3 => html! { <h3 id=self.id.as_str(), onkeyup=|e| Msg::Input(e.key()), onblur=|_| Msg::Update,>{ placeholder }{ content.clone() }</h3>},
+                4 => html! { <h4 id=self.id.as_str(), onkeyup=|e| Msg::Input(e.key()), onblur=|_| Msg::Update,>{ placeholder }{ content.clone() }</h4>},
+                5 => html! { <h5 id=self.id.as_str(), onkeyup=|e| Msg::Input(e.key()), onblur=|_| Msg::Update,>{ placeholder }{ content.clone() }</h5>},
+                _ => html! { <h6 id=self.id.as_str(), onkeyup=|e| Msg::Input(e.key()), onblur=|_| Msg::Update,>{ placeholder }{ content.clone() }</h6>},
             },
             BlockKind::Audio(ref src) => html! {
                 <audio src=src,></audio>
