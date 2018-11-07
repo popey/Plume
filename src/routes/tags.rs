@@ -1,4 +1,4 @@
-use rocket_contrib::Template;
+use rocket_contrib::templates::Template;
 use serde_json;
 
 use plume_models::{
@@ -6,21 +6,21 @@ use plume_models::{
     posts::Post,
     users::User,
 };
-use routes::Page;
+use routes::{total_pages, page_limits};
 
 #[get("/tag/<name>")]
-fn tag(user: Option<User>, conn: DbConn, name: String) -> Template {
-    paginated_tag(user, conn, name, Page::first())
+pub fn tag(user: Option<User>, conn: DbConn, name: String) -> Template {
+    paginated_tag(user, conn, name, 1)
 }
 
 #[get("/tag/<name>?<page>")]
-fn paginated_tag(user: Option<User>, conn: DbConn, name: String, page: Page) -> Template {
-    let posts = Post::list_by_tag(&*conn, name.clone(), page.limits());
+pub fn paginated_tag(user: Option<User>, conn: DbConn, name: String, page: i32) -> Template {
+    let posts = Post::list_by_tag(&*conn, name.clone(), page_limits(page));
     Template::render("tags/index", json!({
         "tag": name.clone(),
         "account": user.map(|u| u.to_json(&*conn)),
         "articles": posts.into_iter().map(|p| p.to_json(&*conn)).collect::<Vec<serde_json::Value>>(),
-        "page": page.page,
-        "n_pages": Page::total(Post::count_for_tag(&*conn, name) as i32)
+        "page": page,
+        "n_pages": total_pages(Post::count_for_tag(&*conn, name) as i32)
     }))
 }

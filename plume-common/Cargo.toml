@@ -11,12 +11,12 @@ array_tool = "1.0"
 base64 = "0.9"
 failure = "0.1"
 failure_derive = "0.1"
-gettext-rs = "0.4"
 heck = "0.3.0"
 hex = "0.3"
 hyper = "0.11.27"
 openssl = "0.10.11"
 reqwest = "0.9"
+rocket = "0.4.0-rc.1"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
@@ -29,6 +29,6 @@ version = "0.4"
 default-features = false
 version = "0.1.2"
 
-[dependencies.rocket]
-git = "https://github.com/SergioBenitez/Rocket"
-rev = "55459db7732b9a240826a5c120c650f87e3372ce"
+[dependencies.rocket_i18n]
+git = "https://github.com/BaptisteGelez/rocket_i18n"
+rev = "c76d8381a0e3c30b6c73d269e351babafa2a09c7"

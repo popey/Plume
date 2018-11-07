@@ -3,7 +3,7 @@ use chrono::Utc;
 use heck::{CamelCase, KebabCase};
 use rocket::{State, request::LenientForm};
 use rocket::response::{Redirect, Flash};
-use rocket_contrib::Template;
+use rocket_contrib::templates::Template;
 use serde_json;
 use std::{collections::{HashMap, HashSet}, borrow::Cow};
 use validator::{Validate, ValidationError, ValidationErrors};
@@ -25,19 +25,14 @@ use plume_models::{
     users::User
 };
 
-#[derive(FromForm)]
-struct CommentQuery {
-    responding_to: Option<i32>
-}
-
 // See: https://github.com/SergioBenitez/Rocket/pull/454
 #[get("/~/<blog>/<slug>", rank = 4)]
-fn details(blog: String, slug: String, conn: DbConn, user: Option<User>) -> Template {
+pub fn details(blog: String, slug: String, conn: DbConn, user: Option<User>) -> Template {
     details_response(blog, slug, conn, user, None)
 }
 
-#[get("/~/<blog>/<slug>?<query>")]
-fn details_response(blog: String, slug: String, conn: DbConn, user: Option<User>, query: Option<CommentQuery>) -> Template {
+#[get("/~/<blog>/<slug>?<responding_to>")]
+pub fn details_response(blog: String, slug: String, conn: DbConn, user: Option<User>, responding_to: Option<i32>) -> Template {
     may_fail!(user.map(|u| u.to_json(&*conn)), Blog::find_by_fqn(&*conn, blog), "Couldn't find this blog", |blog| {
         may_fail!(user.map(|u| u.to_json(&*conn)), Post::find_by_slug(&*conn, slug, blog.id), "Couldn't find this post", |post| {
             if post.published || post.get_authors(&*conn).into_iter().any(|a| a.id == user.clone().map(|u| u.id).unwrap_or(0)) {
@@ -59,8 +54,8 @@ fn details_response(blog: String, slug: String, conn: DbConn, user: Option<User>
                     "has_reshared": user.clone().map(|u| u.has_reshared(&*conn, &post)).unwrap_or(false),
                     "account": &user.clone().map(|u| u.to_json(&*conn)),
                     "date": &post.creation_date.timestamp(),
-                    "previous": query.and_then(|q| q.responding_to.map(|r| Comment::get(&*conn, r)
-                                                                       .expect("posts::details_reponse: Error retrieving previous comment").to_json(&*conn, &vec![]))),
+                    "previous": responding_to.map(|r| Comment::get(&*conn, r)
+                                    .expect("posts::details_reponse: Error retrieving previous comment").to_json(&*conn, &vec![])),
                     "user_fqn": user.clone().map(|u| u.get_fqn(&*conn)).unwrap_or(String::new()),
                     "is_author": user.clone().map(|u| post.get_authors(&*conn).into_iter().any(|a| u.id == a.id)).unwrap_or(false),
                     "is_following": user.map(|u| u.is_following(&*conn, post.get_authors(&*conn)[0].id)).unwrap_or(false)
@@ -75,7 +70,7 @@ fn details_response(blog: String, slug: String, conn: DbConn, user: Option<User>
 }
 
 #[get("/~/<blog>/<slug>", rank = 3)]
-fn activity_details(blog: String, slug: String, conn: DbConn, _ap: ApRequest) -> Result<ActivityStream<Article>, Option<String>> {
+pub fn activity_details(blog: String, slug: String, conn: DbConn, _ap: ApRequest) -> Result<ActivityStream<Article>, Option<String>> {
     let blog = Blog::find_by_fqn(&*conn, blog).ok_or(None)?;
     let post = Post::find_by_slug(&*conn, slug, blog.id).ok_or(None)?;
     if post.published {
@@ -86,7 +81,7 @@ fn activity_details(blog: String, slug: String, conn: DbConn, _ap: ApRequest) ->
 }
 
 #[get("/~/<blog>/new", rank = 2)]
-fn new_auth(blog: String) -> Flash<Redirect> {
+pub fn new_auth(blog: String) -> Flash<Redirect> {
     utils::requires_login(
         "You need to be logged in order to write a new post",
         uri!(new: blog = blog).into()
@@ -94,7 +89,7 @@ fn new_auth(blog: String) -> Flash<Redirect> {
 }
 
 #[get("/~/<blog>/new", rank = 1)]
-fn new(blog: String, user: User, conn: DbConn) -> Option<Template> {
+pub fn new(blog: String, user: User, conn: DbConn) -> Option<Template> {
     let b = Blog::find_by_fqn(&*conn, blog.to_string())?;
 
     if !user.is_author_in(&*conn, b.clone()) {
@@ -116,7 +111,7 @@ fn new(blog: String, user: User, conn: DbConn) -> Option<Template> {
 }
 
 #[get("/~/<blog>/<slug>/edit")]
-fn edit(blog: String, slug: String, user: User, conn: DbConn) -> Option<Template> {
+pub fn edit(blog: String, slug: String, user: User, conn: DbConn) -> Option<Template> {
     let b = Blog::find_by_fqn(&*conn, blog.to_string())?;
     let post = Post::find_by_slug(&*conn, slug, b.id)?;
 
@@ -156,13 +151,12 @@ fn edit(blog: String, slug: String, user: User, conn: DbConn) -> Option<Template
     }
 }
 
-#[post("/~/<blog>/<slug>/edit", data = "<data>")]
-fn update(blog: String, slug: String, user: User, conn: DbConn, data: LenientForm<NewPostForm>, worker: State<Pool<ThunkWorker<()>>>)
+#[post("/~/<blog>/<slug>/edit", data = "<form>")]
+pub fn update(blog: String, slug: String, user: User, conn: DbConn, form: LenientForm<NewPostForm>, worker: State<Pool<ThunkWorker<()>>>)
     -> Result<Redirect, Option<Template>> {
     let b = Blog::find_by_fqn(&*conn, blog.to_string()).ok_or(None)?;
     let mut post = Post::find_by_slug(&*conn, slug.clone(), b.id).ok_or(None)?;
 
-    let form = data.get();
     let new_slug = if !post.published {
         form.title.to_string().to_kebab_case()
     } else {
@@ -249,7 +243,7 @@ fn update(blog: String, slug: String, user: User, conn: DbConn, data: LenientFor
             "instance": Instance::get_local(&*conn),
             "editing": true,
             "errors": errors.inner(),
-            "form": form,
+            "form": *form,
             "is_draft": form.draft,
             "medias": medias.into_iter().map(|m| m.to_json(&*conn)).collect::<Vec<serde_json::Value>>(),
         }))))
@@ -257,7 +251,7 @@ fn update(blog: String, slug: String, user: User, conn: DbConn, data: LenientFor
 }
 
 #[derive(FromForm, Validate, Serialize)]
-struct NewPostForm {
+pub struct NewPostForm {
     #[validate(custom(function = "valid_slug", message = "Invalid title"))]
     pub title: String,
     pub subtitle: String,
@@ -268,7 +262,7 @@ struct NewPostForm {
     pub cover: Option<i32>,
 }
 
-fn valid_slug(title: &str) -> Result<(), ValidationError> {
+pub fn valid_slug(title: &str) -> Result<(), ValidationError> {
     let slug = title.to_string().to_kebab_case();
     if slug.len() == 0 {
         Err(ValidationError::new("empty_slug"))
@@ -279,10 +273,9 @@ fn valid_slug(title: &str) -> Result<(), ValidationError> {
     }
 }
 
-#[post("/~/<blog_name>/new", data = "<data>")]
-fn create(blog_name: String, data: LenientForm<NewPostForm>, user: User, conn: DbConn, worker: State<Pool<ThunkWorker<()>>>) -> Result<Redirect, Option<Template>> {
+#[post("/~/<blog_name>/new", data = "<form>")]
+pub fn create(blog_name: String, form: LenientForm<NewPostForm>, user: User, conn: DbConn, worker: State<Pool<ThunkWorker<()>>>) -> Result<Redirect, Option<Template>> {
     let blog = Blog::find_by_fqn(&*conn, blog_name.to_string()).ok_or(None)?;
-    let form = data.get();
     let slug = form.title.to_string().to_kebab_case();
 
     let mut errors = match form.validate() {
@@ -362,7 +355,7 @@ fn create(blog_name: String, data: LenientForm<NewPostForm>, user: User, conn: D
             "instance": Instance::get_local(&*conn),
             "editing": false,
             "errors": errors.inner(),
-            "form": form,
+            "form": *form,
             "is_draft": form.draft,
             "medias": medias.into_iter().map(|m| m.to_json(&*conn)).collect::<Vec<serde_json::Value>>()
         }))))
@@ -370,7 +363,7 @@ fn create(blog_name: String, data: LenientForm<NewPostForm>, user: User, conn: D
 }
 
 #[post("/~/<blog_name>/<slug>/delete")]
-fn delete(blog_name: String, slug: String, conn: DbConn, user: User, worker: State<Pool<ThunkWorker<()>>>) -> Redirect {
+pub fn delete(blog_name: String, slug: String, conn: DbConn, user: User, worker: State<Pool<ThunkWorker<()>>>) -> Redirect {
     let post = Blog::find_by_fqn(&*conn, blog_name.clone())
         .and_then(|blog| Post::find_by_slug(&*conn, slug.clone(), blog.id));
 

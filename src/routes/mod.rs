@@ -1,12 +1,6 @@
 use atom_syndication::{ContentBuilder, Entry, EntryBuilder, LinkBuilder, Person, PersonBuilder};
-use rocket::{
-    http::uri::{FromUriParam, UriDisplay},
-    response::NamedFile
-};
-use std::{
-    fmt,
-    path::{Path, PathBuf}
-};
+use rocket::response::NamedFile;
+use std::path::{Path, PathBuf};
 
 use plume_models::{Connection, posts::Post};
 
@@ -39,43 +33,17 @@ macro_rules! may_fail {
 
 const ITEMS_PER_PAGE: i32 = 12;
 
-#[derive(FromForm)]
-pub struct Page {
-    page: i32
-}
-
-impl UriDisplay for Page {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "page={}", &self.page as &UriDisplay)
+/// Computes the total number of pages needed to display n_items
+pub fn total_pages(n_items: i32) -> i32 {
+    if n_items % ITEMS_PER_PAGE == 0 {
+        n_items / ITEMS_PER_PAGE
+    } else {
+        (n_items / ITEMS_PER_PAGE) + 1
     }
 }
 
-impl FromUriParam<i32> for Page {
-    type Target = Page;
-    fn from_uri_param(num: i32) -> Page {
-        Page { page: num }
-    }
-}
-
-impl Page {
-    pub fn first() -> Page {
-        Page {
-            page: 1
-        }
-    }
-
-    /// Computes the total number of pages needed to display n_items
-    pub fn total(n_items: i32) -> i32 {
-        if n_items % ITEMS_PER_PAGE == 0 {
-            n_items / ITEMS_PER_PAGE
-        } else {
-            (n_items / ITEMS_PER_PAGE) + 1
-        }
-    }
-
-    pub fn limits(&self) -> (i32, i32) {
-        ((self.page - 1) * ITEMS_PER_PAGE, self.page * ITEMS_PER_PAGE)
-    }
+pub fn page_limits(page: i32) -> (i32, i32) {
+    ((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
 }
 
 pub fn post_to_atom(post: Post, conn: &Connection) -> Entry {
@@ -112,6 +80,6 @@ pub mod user;
 pub mod well_known;
 
 #[get("/static/<file..>", rank = 2)]
-fn static_files(file: PathBuf) -> Option<NamedFile> {
+pub fn static_files(file: PathBuf) -> Option<NamedFile> {
     NamedFile::open(Path::new("static/").join(file)).ok()
 }

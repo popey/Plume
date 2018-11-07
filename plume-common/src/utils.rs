@@ -1,4 +1,3 @@
-use gettextrs::gettext;
 use heck::CamelCase;
 use openssl::rand::rand_bytes;
 use pulldown_cmark::{Event, Parser, Options, Tag, html};
@@ -26,7 +25,8 @@ pub fn make_actor_id(name: String) -> String {
 }
 
 pub fn requires_login(message: &str, url: Uri) -> Flash<Redirect> {
-    Flash::new(Redirect::to(format!("/login?m={}", gettext(message.to_string()))), "callback", url.to_string())
+    // TODO: i18n message
+    Flash::new(Redirect::to(format!("/login?m={}", message)), "callback", url.to_string())
 }
 
 #[derive(Debug)]

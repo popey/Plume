@@ -4,7 +4,7 @@ use rocket::{
     request::LenientForm,
     response::Redirect
 };
-use rocket_contrib::Template;
+use rocket_contrib::templates::Template;
 use serde_json;
 use validator::Validate;
 use workerpool::{Pool, thunk::*};
@@ -21,18 +21,17 @@ use plume_models::{
 };
 
 #[derive(FromForm, Debug, Validate)]
-struct NewCommentForm {
+pub struct NewCommentForm {
     pub responding_to: Option<i32>,
     #[validate(length(min = "1", message = "Your comment can't be empty"))]
     pub content: String
 }
 
-#[post("/~/<blog_name>/<slug>/comment", data = "<data>")]
-fn create(blog_name: String, slug: String, data: LenientForm<NewCommentForm>, user: User, conn: DbConn, worker: State<Pool<ThunkWorker<()>>>)
+#[post("/~/<blog_name>/<slug>/comment", data = "<form>")]
+pub fn create(blog_name: String, slug: String, form: LenientForm<NewCommentForm>, user: User, conn: DbConn, worker: State<Pool<ThunkWorker<()>>>)
     -> Result<Redirect, Option<Template>> {
     let blog = Blog::find_by_fqn(&*conn, blog_name.clone()).ok_or(None)?;
     let post = Post::find_by_slug(&*conn, slug.clone(), blog.id).ok_or(None)?;
-    let form = data.get();
     form.validate()
         .map(|_| {
             let (html, mentions, _hashtags) = utils::md_to_html(form.content.as_ref());
@@ -83,6 +82,6 @@ fn create(blog_name: String, slug: String, data: LenientForm<NewCommentForm>, us
 }
 
 #[get("/~/<_blog>/<_slug>/comment/<id>")]
-fn activity_pub(_blog: String, _slug: String, id: i32, _ap: ApRequest, conn: DbConn) -> Option<ActivityStream<Note>> {
+pub fn activity_pub(_blog: String, _slug: String, id: i32, _ap: ApRequest, conn: DbConn) -> Option<ActivityStream<Note>> {
     Comment::get(&*conn, id).map(|c| ActivityStream::new(c.into_activity(&*conn)))
 }
